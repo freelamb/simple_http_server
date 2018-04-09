@@ -16,7 +16,7 @@ $ git clone https://github.com/runmec/simple_http_server.git
 # enter directory
 $ cd simple_http_server
 
-# run application
+# run server
 $ python simple_http_server.py 8000
 ```
 
