@@ -20,9 +20,6 @@ $ cd simple_http_upload
 $ python simple_http_upload.py 8000
 ```
 
-## Documents
-
-
 
 ## Contributing
 
