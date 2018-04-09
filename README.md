@@ -20,6 +20,9 @@ $ cd simple_http_server
 $ python simple_http_server.py 8000
 ```
 
+## Example
+
+![](image/example.jpeg)
 
 ## Contributing
 
@@ -31,6 +34,10 @@ $ python simple_http_server.py 8000
 ## Changelog
 
 [Changelog](CHANGELOG.md)
+
+## reference
+
+<https://github.com/tualatrix/tools/blob/master/SimpleHTTPServerWithUpload.py>
 
 ## License
 
