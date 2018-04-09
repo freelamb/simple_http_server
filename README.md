@@ -11,13 +11,13 @@ simple http server
 ## Usage
 ```bash
 # get code
-$ git clone https://github.com/runmec/simple_http_upload.git
+$ git clone https://github.com/runmec/simple_http_server.git
 
 # enter directory
-$ cd simple_http_upload
+$ cd simple_http_server
 
-# run
-$ python simple_http_upload.py 8000
+# run application
+$ python simple_http_server.py 8000
 ```
 
 
