@@ -1,7 +1,8 @@
 language: python
 
-script:
-  - python -m simple_http_server.py
+python:
+  - "2.7"
+
 
 notifications:
   - email: true
