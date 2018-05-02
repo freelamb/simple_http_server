@@ -1,6 +1,6 @@
 # simple_http_server
 
-simple http server
+[![Build Status](https://travis-ci.org/freelamb/simple_http_server.svg?branch=master)](https://travis-ci.org/freelamb/simple_http_server)
 
 ## Features
 
