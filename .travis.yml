@@ -1,4 +1,4 @@
-language: pytthon
+language: python
 
 script:
   - python simple_http_server.py
