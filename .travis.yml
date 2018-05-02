@@ -1,7 +1,7 @@
 language: python
 
 script:
-  - python simple_http_server.py
+  - python -m simple_http_server.py
 
 notifications:
   - email: true
