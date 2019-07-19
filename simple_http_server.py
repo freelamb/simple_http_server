@@ -7,8 +7,6 @@ and HEAD requests in a fairly straightforward manner.
 
 __version__ = "0.1"
 __all__ = ["SimpleHTTPRequestHandler"]
-__author__ = "bones7456"
-__home_page__ = "http://li2z.cn/"
 
 import os
 import posixpath
