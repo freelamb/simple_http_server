@@ -24,6 +24,10 @@ $ python simple_http_server.py 8000
 
 ![](image/example.jpeg)
 
+## Todo
+- [ ] support python3
+- [ ] support Multi-threaded
+
 ## Contributing
 
 1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.
