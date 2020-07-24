@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "1.0.0"
+__version__ = "0.1.2"
 __author__ = "freelamb"
 __all__ = ["SimpleHTTPRequestHandler"]
 
@@ -72,7 +72,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         length = f.tell()
         f.seek(0)
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/html;charset=utf-8")
         self.send_header("Content-Length", str(length))
         self.end_headers()
         if f:
@@ -198,7 +198,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         length = f.tell()
         f.seek(0)
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/html;charset=utf-8")
         self.send_header("Content-Length", str(length))
         self.end_headers()
         return f
