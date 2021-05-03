@@ -7,8 +7,11 @@ and HEAD requests in a fairly straightforward manner.
 """
 
 __version__ = "0.1.2"
-__author__ = "freelamb"
+__author__ = "freelamb@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
+
+from BaseHTTPServer import BaseHTTPRequestHandler
+from BaseHTTPServer import HTTPServer
 
 import os
 import sys
@@ -19,6 +22,7 @@ import cgi
 import shutil
 import mimetypes
 import re
+import signal
 
 try:
     from cStringIO import StringIO
@@ -26,7 +30,7 @@ except ImportError:
     from StringIO import StringIO
 
 
-class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Simple HTTP request handler with GET/HEAD/POST commands.
     This serves files from the current directory and any of its
     subdirectories.  The MIME type for files is determined by
@@ -256,19 +260,27 @@ def translate_path(path):
     return path
 
 
+# 自定义信号处理函数
+def signal_handler(signal, frame):
+    print("You choose to stop me.")
+    exit()
+
+
 def main():
-    # BaseHTTPServer.test(SimpleHTTPRequestHandler, BaseHTTPServer.HTTPServer)
     if sys.argv[1:]:
         port = int(sys.argv[1])
     else:
         port = 8000
     server_address = ('', port)
 
-    SimpleHTTPRequestHandler.protocol_version = "HTTP/1.0"
-    httpd = BaseHTTPServer.HTTPServer(server_address, SimpleHTTPRequestHandler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    sa = httpd.socket.getsockname()
-    print("Serving HTTP on", sa[0], "port", sa[1], "...")
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    server = httpd.socket.getsockname()
+    print("server_version: " + SimpleHTTPRequestHandler.server_version + ", python_version: " + SimpleHTTPRequestHandler.sys_version)
+    print("Serving HTTP on: " + str(server[0]) + ", port: " + str(server[1]) + " ...")
     httpd.serve_forever()
 
 
