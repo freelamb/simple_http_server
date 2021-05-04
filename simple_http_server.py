@@ -18,27 +18,20 @@ import shutil
 import mimetypes
 import re
 import signal
+from io import StringIO, BytesIO
 
 if sys.version_info.major == 3:
     # Python3
     from urllib.parse import quote
     from urllib.parse import unquote
-    from io import StringIO, BytesIO
     from http.server import HTTPServer
     from http.server import BaseHTTPRequestHandler
 else:
     # Python2
     from urllib import quote
     from urllib import unquote
-    from io import BytesIO as StringIO
     from BaseHTTPServer import HTTPServer
     from BaseHTTPServer import BaseHTTPRequestHandler
-
-# try:
-#     from cStringIO import StringIO
-# except ImportError:
-#     from StringIO import StringIO
-
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Simple HTTP request handler with GET/HEAD/POST commands.
@@ -187,16 +180,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_error(404, "No permission to list directory")
             return None
         list_dir.sort(key=lambda a: a.lower())
-        f = StringIO()
+        f = BytesIO()
         display_path = cgi.escape(unquote(self.path))
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write("<html>\n<title>Directory listing for %s</title>\n" % display_path)
-        f.write("<body>\n<h2>Directory listing for %s</h2>\n" % display_path)
-        f.write("<hr>\n")
-        f.write("<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
-        f.write("<input name=\"file\" type=\"file\"/>")
-        f.write("<input type=\"submit\" value=\"upload\"/></form>\n")
-        f.write("<hr>\n<ul>\n")
+        f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('ascii'))
+        f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('ascii'))
+        f.write(b"<hr>\n")
+        f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
+        f.write(b"<input name=\"file\" type=\"file\"/>")
+        f.write(b"<input type=\"submit\" value=\"upload\"/></form>\n")
+        f.write(b"<hr>\n<ul>\n")
         for name in list_dir:
             fullname = os.path.join(path, name)
             display_name = linkname = name
@@ -207,8 +200,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write('<li><a href="%s">%s</a>\n' % (quote(linkname), cgi.escape(display_name)))
-        f.write("</ul>\n<hr>\n</body>\n</html>\n")
+            f.write(b'<li><a href="%s">%s</a>\n' %
+                    (quote(linkname).encode('ascii'), cgi.escape(display_name).encode('ascii')))
+        f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
