@@ -10,24 +10,34 @@ __version__ = "0.1.2"
 __author__ = "freelamb@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
-from BaseHTTPServer import BaseHTTPRequestHandler
-from BaseHTTPServer import HTTPServer
-
 import os
 import sys
 import posixpath
-import BaseHTTPServer
-import urllib
 import cgi
 import shutil
 import mimetypes
 import re
 import signal
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+if sys.version_info.major == 3:
+    # Python3
+    from urllib.parse import quote
+    from urllib.parse import unquote
+    from io import StringIO, BytesIO
+    from http.server import HTTPServer
+    from http.server import BaseHTTPRequestHandler
+else:
+    # Python2
+    from urllib import quote
+    from urllib import unquote
+    from io import BytesIO as StringIO
+    from BaseHTTPServer import HTTPServer
+    from BaseHTTPServer import BaseHTTPRequestHandler
+
+# try:
+#     from cStringIO import StringIO
+# except ImportError:
+#     from StringIO import StringIO
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -178,7 +188,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return None
         list_dir.sort(key=lambda a: a.lower())
         f = StringIO()
-        display_path = cgi.escape(urllib.unquote(self.path))
+        display_path = cgi.escape(unquote(self.path))
         f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write("<html>\n<title>Directory listing for %s</title>\n" % display_path)
         f.write("<body>\n<h2>Directory listing for %s</h2>\n" % display_path)
@@ -197,7 +207,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write('<li><a href="%s">%s</a>\n' % (urllib.quote(linkname), cgi.escape(display_name)))
+            f.write('<li><a href="%s">%s</a>\n' % (quote(linkname), cgi.escape(display_name)))
         f.write("</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
@@ -247,7 +257,7 @@ def translate_path(path):
     # abandon query parameters
     path = path.split('?', 1)[0]
     path = path.split('#', 1)[0]
-    path = posixpath.normpath(urllib.unquote(path))
+    path = posixpath.normpath(unquote(path))
     words = path.split('/')
     words = filter(None, words)
     path = os.getcwd()
@@ -260,7 +270,6 @@ def translate_path(path):
     return path
 
 
-# 自定义信号处理函数
 def signal_handler(signal, frame):
     print("You choose to stop me.")
     exit()
