@@ -62,20 +62,20 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         """Serve a POST request."""
         r, info = self.deal_post_data()
         print(r, info, "by: ", self.client_address)
-        f = StringIO()
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write("<html>\n<title>Upload Result Page</title>\n")
-        f.write("<body>\n<h2>Upload Result Page</h2>\n")
-        f.write("<hr>\n")
+        f = BytesIO()
+        f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        f.write(b"<html>\n<title>Upload Result Page</title>\n")
+        f.write(b"<body>\n<h2>Upload Result Page</h2>\n")
+        f.write(b"<hr>\n")
         if r:
-            f.write("<strong>Success:</strong>")
+            f.write(b"<strong>Success:</strong>")
         else:
-            f.write("<strong>Failed:</strong>")
-        f.write(info)
-        f.write("<br><a href=\"%s\">back</a>" % self.headers['referer'])
-        f.write("<hr><small>Powered By: freelamb, check new version at ")
-        f.write("<a href=\"https://github.com/freelamb/simple_http_server\">")
-        f.write("here</a>.</small></body>\n</html>\n")
+            f.write(b"<strong>Failed:</strong>")
+        f.write(info.encode('ascii'))
+        f.write(b"<br><a href=\"%s\">back</a>" % self.headers['referer'].encode('ascii'))
+        f.write(b"<hr><small>Powered By: freelamb, check new version at ")
+        f.write(b"<a href=\"https://github.com/freelamb/simple_http_server\">")
+        f.write(b"here</a>.</small></body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
@@ -87,7 +87,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.close()
 
     def deal_post_data(self):
-        boundary = self.headers.plisttext.split("=")[1]
+        boundary = self.headers["Content-Type"].split("=")[1].encode('ascii')
         remain_bytes = int(self.headers['content-length'])
         line = self.rfile.readline()
         remain_bytes -= len(line)
@@ -95,7 +95,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return False, "Content NOT begin with boundary"
         line = self.rfile.readline()
         remain_bytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line)
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', str(line))
         if not fn:
             return False, "Can't find out file name..."
         path = translate_path(self.path)
@@ -118,7 +118,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             remain_bytes -= len(line)
             if boundary in line:
                 pre_line = pre_line[0:-1]
-                if pre_line.endswith('\r'):
+                if pre_line.endswith(b'\r'):
                     pre_line = pre_line[0:-1]
                 out.write(pre_line)
                 out.close()
@@ -279,6 +279,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGHUP, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+
 
     httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
     server = httpd.socket.getsockname()
