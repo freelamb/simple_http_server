@@ -6,27 +6,34 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.1.2"
-__author__ = "freelamb"
+__version__ = "0.2.0"
+__author__ = "freelamb@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
 import os
 import sys
 import posixpath
-import BaseHTTPServer
-import urllib
 import cgi
 import shutil
 import mimetypes
 import re
+import signal
+from io import StringIO, BytesIO
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+if sys.version_info.major == 3:
+    # Python3
+    from urllib.parse import quote
+    from urllib.parse import unquote
+    from http.server import HTTPServer
+    from http.server import BaseHTTPRequestHandler
+else:
+    # Python2
+    from urllib import quote
+    from urllib import unquote
+    from BaseHTTPServer import HTTPServer
+    from BaseHTTPServer import BaseHTTPRequestHandler
 
-
-class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Simple HTTP request handler with GET/HEAD/POST commands.
     This serves files from the current directory and any of its
     subdirectories.  The MIME type for files is determined by
@@ -54,7 +61,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self):
         """Serve a POST request."""
         r, info = self.deal_post_data()
-        print r, info, "by: ", self.client_address
+        print(r, info, "by: ", self.client_address)
         f = StringIO()
         f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write("<html>\n<title>Upload Result Page</title>\n")
@@ -173,16 +180,16 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_error(404, "No permission to list directory")
             return None
         list_dir.sort(key=lambda a: a.lower())
-        f = StringIO()
-        display_path = cgi.escape(urllib.unquote(self.path))
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write("<html>\n<title>Directory listing for %s</title>\n" % display_path)
-        f.write("<body>\n<h2>Directory listing for %s</h2>\n" % display_path)
-        f.write("<hr>\n")
-        f.write("<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
-        f.write("<input name=\"file\" type=\"file\"/>")
-        f.write("<input type=\"submit\" value=\"upload\"/></form>\n")
-        f.write("<hr>\n<ul>\n")
+        f = BytesIO()
+        display_path = cgi.escape(unquote(self.path))
+        f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('ascii'))
+        f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('ascii'))
+        f.write(b"<hr>\n")
+        f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
+        f.write(b"<input name=\"file\" type=\"file\"/>")
+        f.write(b"<input type=\"submit\" value=\"upload\"/></form>\n")
+        f.write(b"<hr>\n<ul>\n")
         for name in list_dir:
             fullname = os.path.join(path, name)
             display_name = linkname = name
@@ -193,8 +200,9 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write('<li><a href="%s">%s</a>\n' % (urllib.quote(linkname), cgi.escape(display_name)))
-        f.write("</ul>\n<hr>\n</body>\n</html>\n")
+            f.write(b'<li><a href="%s">%s</a>\n' %
+                    (quote(linkname).encode('ascii'), cgi.escape(display_name).encode('ascii')))
+        f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
@@ -243,7 +251,7 @@ def translate_path(path):
     # abandon query parameters
     path = path.split('?', 1)[0]
     path = path.split('#', 1)[0]
-    path = posixpath.normpath(urllib.unquote(path))
+    path = posixpath.normpath(unquote(path))
     words = path.split('/')
     words = filter(None, words)
     path = os.getcwd()
@@ -256,19 +264,26 @@ def translate_path(path):
     return path
 
 
+def signal_handler(signal, frame):
+    print("You choose to stop me.")
+    exit()
+
+
 def main():
-    # BaseHTTPServer.test(SimpleHTTPRequestHandler, BaseHTTPServer.HTTPServer)
     if sys.argv[1:]:
         port = int(sys.argv[1])
     else:
         port = 8000
     server_address = ('', port)
 
-    SimpleHTTPRequestHandler.protocol_version = "HTTP/1.0"
-    httpd = BaseHTTPServer.HTTPServer(server_address, SimpleHTTPRequestHandler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    sa = httpd.socket.getsockname()
-    print "Serving HTTP on", sa[0], "port", sa[1], "..."
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    server = httpd.socket.getsockname()
+    print("server_version: " + SimpleHTTPRequestHandler.server_version + ", python_version: " + SimpleHTTPRequestHandler.sys_version)
+    print("Serving HTTP on: " + str(server[0]) + ", port: " + str(server[1]) + " ...")
     httpd.serve_forever()
 
 
