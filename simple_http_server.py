@@ -13,7 +13,10 @@ __all__ = ["SimpleHTTPRequestHandler"]
 import os
 import sys
 import posixpath
-import cgi
+try:
+    from html import escape
+except ImportError:
+    from cgi import escape
 import shutil
 import mimetypes
 import re
@@ -32,6 +35,7 @@ else:
     from urllib import unquote
     from BaseHTTPServer import HTTPServer
     from BaseHTTPServer import BaseHTTPRequestHandler
+
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Simple HTTP request handler with GET/HEAD/POST commands.
@@ -181,7 +185,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return None
         list_dir.sort(key=lambda a: a.lower())
         f = BytesIO()
-        display_path = cgi.escape(unquote(self.path))
+        display_path = escape(unquote(self.path))
         f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('ascii'))
         f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('ascii'))
@@ -201,7 +205,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
             f.write(b'<li><a href="%s">%s</a>\n' %
-                    (quote(linkname).encode('ascii'), cgi.escape(display_name).encode('ascii')))
+                    (quote(linkname).encode('ascii'), escape(display_name).encode('ascii')))
         f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
@@ -279,7 +283,6 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGHUP, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
 
     httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
     server = httpd.socket.getsockname()
