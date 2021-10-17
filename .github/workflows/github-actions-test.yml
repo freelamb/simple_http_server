@@ -10,7 +10,7 @@ on:
     branches: [ master, dev]
 
 jobs:
-  linux OS build:
+  linuxOS_build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  MacOS build:
+  MacOS_build:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  Windows build:
+  Windows_build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
