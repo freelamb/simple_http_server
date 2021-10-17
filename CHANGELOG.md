@@ -1,3 +1,9 @@
+<a name="0.2.1"></a>
+## [0.2.1] (2021-10-17)
+### Features
+
+* fix windows signal SIGHUP error
+
 <a name="0.2.0"></a>
 ## [0.2.0] (2021-05-04)
 ### Features
