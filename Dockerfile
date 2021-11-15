@@ -9,4 +9,5 @@ WORKDIR /opt/data
 ENV PORT=8000
 EXPOSE $PORT
 
+
 CMD python /opt/http_server/simple_http_server.py ${PORT}
