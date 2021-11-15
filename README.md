@@ -18,6 +18,16 @@ $ cd simple_http_server
 
 # run server
 $ python simple_http_server.py 8000
+
+# run as docker container
+# 1.build the image('.' below refer to the root path of this project)
+docker build -t freelamb/simple_http_server .
+# 2.run the container using the image built just now in docker 
+docker run 
+  --name simple_http_server \ 
+  -p 8000:8000 \ 
+  -v /opt/data:/opt/data \ 
+  -d freelamb/simple_http_server:latest
 ```
 
 ## Example
