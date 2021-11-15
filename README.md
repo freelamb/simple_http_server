@@ -35,9 +35,9 @@ docker run
 ![](image/example.jpeg)
 
 ## Todo
-- [x] support python3
 - [ ] support Multi-threaded
-
+- [ ] add docker images
+- [ ] add to pypi
 ## Contributing
 
 1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.
