@@ -6,12 +6,13 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __author__ = "freelamb@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
 import os
 import sys
+import argparse
 import posixpath
 try:
     from html import escape
@@ -272,23 +273,24 @@ def signal_handler(signal, frame):
     print("You choose to stop me.")
     exit()
 
+def _argparse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bind', '-b', metavar='ADDRESS', default='0.0.0.0', help='Specify alternate bind address [default: all interfaces]')
+    parser.add_argument('--version', '-v', action='version', version=__version__)
+    parser.add_argument('port', action='store', default=8000, type=int, nargs='?', help='Specify alternate port [default: 8000]')
+    return parser.parse_args()
 
 def main():
-    if sys.argv[1:]:
-        port = int(sys.argv[1])
-    else:
-        port = 8000
-    server_address = ('', port)
-
+    args = _argparse()
+    # print(args)
+    server_address = (args.bind, args.port)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
     httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
     server = httpd.socket.getsockname()
     print("server_version: " + SimpleHTTPRequestHandler.server_version + ", python_version: " + SimpleHTTPRequestHandler.sys_version)
-    print("Serving HTTP on: " + str(server[0]) + ", port: " + str(server[1]) + " ...")
+    print("Serving http on: " + str(server[0]) + ", port: " + str(server[1]) + " ... (http://" + server[0] + ":" + str(server[1]) + "/)")
     httpd.serve_forever()
-
 
 if __name__ == '__main__':
     main()
