@@ -76,8 +76,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.write(b"<strong>Success:</strong>")
         else:
             f.write(b"<strong>Failed:</strong>")
-        f.write(info.encode('ascii'))
-        f.write(b"<br><a href=\"%s\">back</a>" % self.headers['referer'].encode('ascii'))
+        f.write(info.encode('utf-8'))
+        f.write(b"<br><a href=\"%s\">back</a>" % self.headers['referer'].encode('utf-8'))
         f.write(b"<hr><small>Powered By: freelamb, check new version at ")
         f.write(b"<a href=\"https://github.com/freelamb/simple_http_server\">")
         f.write(b"here</a>.</small></body>\n</html>\n")
@@ -92,7 +92,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.close()
 
     def deal_post_data(self):
-        boundary = self.headers["Content-Type"].split("=")[1].encode('ascii')
+        boundary = self.headers["Content-Type"].split("=")[1].encode('utf-8')
         remain_bytes = int(self.headers['content-length'])
         line = self.rfile.readline()
         remain_bytes -= len(line)
@@ -100,7 +100,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return False, "Content NOT begin with boundary"
         line = self.rfile.readline()
         remain_bytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', str(line))
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode('utf-8'))
         if not fn:
             return False, "Can't find out file name..."
         path = translate_path(self.path)
@@ -188,8 +188,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         f = BytesIO()
         display_path = escape(unquote(self.path))
         f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('ascii'))
-        f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('ascii'))
+        f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('utf-8'))
+        f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('utf-8'))
         f.write(b"<hr>\n")
         f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
         f.write(b"<input name=\"file\" type=\"file\"/>")
@@ -206,7 +206,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
             f.write(b'<li><a href="%s">%s</a>\n' %
-                    (quote(linkname).encode('ascii'), escape(display_name).encode('ascii')))
+                    (quote(linkname).encode('utf-8'), escape(display_name).encode('utf-8')))
         f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
