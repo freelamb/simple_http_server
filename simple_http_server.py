@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __author__ = "freelamb@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
@@ -32,6 +32,8 @@ if sys.version_info.major == 3:
     from http.server import BaseHTTPRequestHandler
 else:
     # Python2
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
     from urllib import quote
     from urllib import unquote
     from BaseHTTPServer import HTTPServer
@@ -205,8 +207,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write(b'<li><a href="%s">%s</a>\n' %
-                    (quote(linkname).encode('utf-8'), escape(display_name).encode('utf-8')))
+            f.write(b'<li><a href="%s">%s</a>\n' % (quote(linkname).encode('utf-8'), escape(display_name).encode('utf-8')))
         f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
@@ -289,6 +290,7 @@ def main():
     httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
     server = httpd.socket.getsockname()
     print("server_version: " + SimpleHTTPRequestHandler.server_version + ", python_version: " + SimpleHTTPRequestHandler.sys_version)
+    print("sys encoding: " + sys.getdefaultencoding())
     print("Serving http on: " + str(server[0]) + ", port: " + str(server[1]) + " ... (http://" + server[0] + ":" + str(server[1]) + "/)")
     httpd.serve_forever()
 
