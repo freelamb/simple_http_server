@@ -79,7 +79,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         else:
             f.write(b"<strong>Failed:</strong>")
         f.write(info.encode('utf-8'))
-        f.write(b"<br><a href=\"%s\">back</a>" % self.headers['referer'].encode('utf-8'))
+        f.write(b"<br><a href=\".\">back</a>")
         f.write(b"<hr><small>Powered By: freelamb, check new version at ")
         f.write(b"<a href=\"https://github.com/freelamb/simple_http_server\">")
         f.write(b"here</a>.</small></body>\n</html>\n")
