@@ -7,7 +7,7 @@
 - ✔ simple
 - ✔ upload
 - ✔ download
-
+- ✔ support python2, python3
 ## Usage
 ```bash
 # get code
