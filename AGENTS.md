@@ -112,8 +112,6 @@ Keep these files aligned:
 
 Known documentation drift to address in future work:
 
-- README still shows a Travis CI badge.
-- `.travis.yml` is obsolete and does not run meaningful tests.
 - README says Python 2 and Python 3 are supported, while CI and Docker only exercise Python 3.9.
 
 ## Versioned Release Workflow
@@ -154,5 +152,4 @@ The Docker Hub publish workflow requires repository secrets named `DOCKERHUB_USE
 - Sanitize and escape upload result output.
 - Replace `HTTPServer` with a threaded server for Python 3.
 - Update GitHub Actions to current action versions.
-- Remove or replace Travis references.
 - Clarify safe usage in README.
