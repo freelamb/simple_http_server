@@ -21,7 +21,16 @@ $ python simple_http_server.py 8000
 
 # expose to another host in a trusted network
 $ python simple_http_server.py --bind 0.0.0.0 8000
+```
 
+Install from PyPI after a release is published:
+
+```bash
+$ python -m pip install simple-http-server-upload
+$ simple-http-server-upload 8000
+```
+
+```bash
 # run as docker container
 # 1.build the image('.' below refer to the root path of this project)
 docker build -t freelamb/simple_http_server .
@@ -45,7 +54,6 @@ Uploaded file names are sanitized, upload results and directory listings escape 
 
 ## Todo
 - [ ] add docker images
-- [ ] add to pypi
 ## Contributing
 
 1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.

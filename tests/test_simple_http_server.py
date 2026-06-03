@@ -222,5 +222,15 @@ class ConnectionHandlingTests(unittest.TestCase):
         self.assertTrue(handler.close_connection)
 
 
+class PackagingMetadataTests(unittest.TestCase):
+    def test_pyproject_exposes_console_script_and_current_version(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "pyproject.toml"), "r", encoding="utf-8") as pyproject:
+            metadata = pyproject.read()
+
+        self.assertIn('version = "%s"' % simple_http_server.__version__, metadata)
+        self.assertIn('simple-http-server-upload = "simple_http_server:main"', metadata)
+
+
 if __name__ == "__main__":
     unittest.main()
