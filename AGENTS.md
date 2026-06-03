@@ -60,7 +60,7 @@ When making changes, prioritize these issues first:
 - Keep the project dependency-free unless there is a strong reason to add packaging or test dependencies.
 - Preserve the simple CLI experience.
 - Prefer small, focused changes over broad rewrites.
-- If Python 2 support is removed, update README, changelog, CI, and code comments in the same change.
+- If Python 2 support is removed, update README, CI, and code comments in the same change.
 - If public/network-facing behavior changes, update README and SECURITY.md.
 - Do not silently change the served root directory behavior; users expect the current working directory to be served.
 - Avoid introducing platform-specific behavior without checking Linux, macOS, and Windows implications.
@@ -104,17 +104,16 @@ python3 -m unittest discover -s tests
 Keep these files aligned:
 
 - `simple_http_server.py`: source version in `__version__`.
-- `CHANGELOG.md`: released changes.
 - `README.md`: English install, run, Docker, support status, and security caveats.
 - `README.zh-CN.md`: Simplified Chinese translation of `README.md`; update it whenever the English README changes.
 - `SECURITY.md`: supported versions and vulnerability contact.
 - `.github/workflows/github-actions-test.yml`: supported Python versions and CI checks.
+- GitHub Releases: version history and release notes.
 
 Known documentation drift to address in future work:
 
 - README still shows a Travis CI badge.
 - `.travis.yml` is obsolete and does not run meaningful tests.
-- `CHANGELOG.md` does not reflect the current `0.3.2` source version.
 - README says Python 2 and Python 3 are supported, while CI and Docker only exercise Python 3.9.
 
 ## Versioned Release Workflow
@@ -124,16 +123,15 @@ Treat every code change as versioned work unless the user explicitly says it is 
 - Decide the next version number before committing. Do not reuse a version that has already been uploaded to PyPI.
 - Update the source version in `simple_http_server.py` (`__version__`).
 - Update the package version in `pyproject.toml`.
-- Add a new top entry in `CHANGELOG.md` with the version, date, and concise user-facing changes.
 - Update `README.md`, `SECURITY.md`, and any other user-facing docs when behavior, install steps, security posture, or supported versions change.
 - Run the required tests and packaging checks before release.
 - Commit the code and documentation changes together for that version.
 - Create and push a matching Git tag, preferably `vX.Y.Z`.
-- Create a GitHub Release for the tag with notes that match the changelog.
+- Create a GitHub Release for the tag with concise user-facing release notes.
 - Build and upload the PyPI package for the same version.
 - Verify the package can be installed or at least that `twine check` passes before asking the user to publish.
 
-When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, changelog entry, tag, GitHub Release, and PyPI package.
+When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, tag, GitHub Release, and PyPI package.
 
 ## Release And Packaging Notes
 

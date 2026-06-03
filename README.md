@@ -28,7 +28,7 @@ $ python simple_http_server.py --max-upload-size 1024 8000
 $ python simple_http_server.py --bind 0.0.0.0 8000
 ```
 
-Install from PyPI after a release is published:
+Install from PyPI:
 
 ```bash
 $ python -m pip install simple-http-server-upload
@@ -65,14 +65,6 @@ Uploaded file names are sanitized, and upload results and directory listings esc
 2. Fork [the repository](https://github.com/freelamb/simple_http_server)_ on GitHub to start making your changes to the **master** branch (or branch off of it).
 3. Write a test which shows that the bug was fixed or that the feature works as expected.
 4. Send a pull request and bug the maintainer until it gets merged and published. :) Make sure to add yourself to [AUTHORS_](AUTHORS.md).
-
-## Changelog
-
-[Changelog](CHANGELOG.md)
-
-## reference
-
-<https://github.com/tualatrix/tools/blob/master/SimpleHTTPServerWithUpload.py>
 
 ## License
 

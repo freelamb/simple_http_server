@@ -30,7 +30,7 @@ $ python simple_http_server.py --max-upload-size 1024 8000
 $ python simple_http_server.py --bind 0.0.0.0 8000
 ```
 
-发布版本后，可以从 PyPI 安装：
+从 PyPI 安装：
 
 ```bash
 $ python -m pip install simple-http-server-upload
@@ -70,14 +70,6 @@ docker run
 2. 在 GitHub 上 fork [本仓库](https://github.com/freelamb/simple_http_server)，从 **master** 分支开始修改，或基于它创建新分支。
 3. 编写测试，证明问题已经修复，或功能符合预期。
 4. 提交 pull request，并持续跟进直到合并和发布。记得把自己添加到 [AUTHORS](AUTHORS.md)。
-
-## 更新日志
-
-[更新日志](CHANGELOG.md)
-
-## 参考
-
-<https://github.com/tualatrix/tools/blob/master/SimpleHTTPServerWithUpload.py>
 
 ## 许可证
 
