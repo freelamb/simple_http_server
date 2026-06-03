@@ -1,3 +1,17 @@
+<a name="0.3.3"></a>
+## [0.3.3] (Unreleased)
+### Security
+
+* sanitize uploaded filenames
+* escape upload and directory listing output
+* reject malformed upload headers and uploads larger than 100 MiB
+
+### Features
+
+* default to localhost binding
+* serve requests with a threaded HTTP server
+* add unit tests for helper behavior
+
 <a name="0.2.1"></a>
 ## [0.2.1] (2021-10-17)
 ### Features

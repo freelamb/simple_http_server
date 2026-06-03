@@ -22,13 +22,14 @@ import shutil
 import mimetypes
 import re
 import signal
-from io import StringIO, BytesIO
+from io import BytesIO
 
 if sys.version_info.major == 3:
     # Python3
+    from importlib import reload
     from urllib.parse import quote
     from urllib.parse import unquote
-    from http.server import HTTPServer
+    from http.server import ThreadingHTTPServer
     from http.server import BaseHTTPRequestHandler
 else:
     # Python2
@@ -36,8 +37,15 @@ else:
     sys.setdefaultencoding('utf-8')
     from urllib import quote
     from urllib import unquote
-    from BaseHTTPServer import HTTPServer
+    from BaseHTTPServer import HTTPServer as BaseHTTPServer
     from BaseHTTPServer import BaseHTTPRequestHandler
+    from SocketServer import ThreadingMixIn
+
+    class ThreadingHTTPServer(ThreadingMixIn, BaseHTTPServer):
+        daemon_threads = True
+
+
+MAX_UPLOAD_SIZE = 100 * 1024 * 1024
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -51,6 +59,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """
 
     server_version = "simple_http_server/" + __version__
+    max_upload_size = MAX_UPLOAD_SIZE
 
     def do_GET(self):
         """Serve a GET request."""
@@ -78,7 +87,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.write(b"<strong>Success:</strong>")
         else:
             f.write(b"<strong>Failed:</strong>")
-        f.write(info.encode('utf-8'))
+        f.write(html_escape(info).encode('utf-8'))
         f.write(b"<br><a href=\".\">back</a>")
         f.write(b"<hr><small>Powered By: freelamb, check new version at ")
         f.write(b"<a href=\"https://github.com/freelamb/simple_http_server\">")
@@ -94,46 +103,67 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.close()
 
     def deal_post_data(self):
-        boundary = self.headers["Content-Type"].split("=")[1].encode('utf-8')
-        remain_bytes = int(self.headers['content-length'])
+        content_type = self.headers.get("Content-Type", "")
+        match = re.search(r'boundary=([^;]+)', content_type)
+        if not match or "multipart/form-data" not in content_type.lower():
+            return False, "Content-Type must be multipart/form-data"
+        boundary = match.group(1).strip().strip('"').encode('utf-8')
+        if not boundary:
+            return False, "Upload boundary is empty"
+        content_length = self.headers.get('content-length')
+        if not content_length:
+            return False, "Missing content-length header"
+        try:
+            remain_bytes = int(content_length)
+        except ValueError:
+            return False, "Invalid content-length header"
+        if remain_bytes > self.max_upload_size:
+            return False, "Upload exceeds the %d byte limit" % self.max_upload_size
         line = self.rfile.readline()
         remain_bytes -= len(line)
         if boundary not in line:
             return False, "Content NOT begin with boundary"
         line = self.rfile.readline()
         remain_bytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode('utf-8'))
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode('utf-8', 'replace'))
         if not fn:
             return False, "Can't find out file name..."
+        fn = sanitize_upload_filename(fn[0])
+        if not fn:
+            return False, "Unsafe upload file name"
         path = translate_path(self.path)
-        fn = os.path.join(path, fn[0])
-        while os.path.exists(fn):
-            fn += "_"
+        target_path = os.path.join(path, fn)
+        while os.path.exists(target_path):
+            target_path += "_"
         line = self.rfile.readline()
         remain_bytes -= len(line)
         line = self.rfile.readline()
         remain_bytes -= len(line)
         try:
-            out = open(fn, 'wb')
+            out = open(target_path, 'wb')
         except IOError:
             return False, "Can't create file to write, do you have permission to write?"
 
-        pre_line = self.rfile.readline()
-        remain_bytes -= len(pre_line)
-        while remain_bytes > 0:
-            line = self.rfile.readline()
-            remain_bytes -= len(line)
-            if boundary in line:
-                pre_line = pre_line[0:-1]
-                if pre_line.endswith(b'\r'):
+        try:
+            pre_line = self.rfile.readline()
+            remain_bytes -= len(pre_line)
+            while remain_bytes > 0:
+                line = self.rfile.readline()
+                remain_bytes -= len(line)
+                if boundary in line:
                     pre_line = pre_line[0:-1]
-                out.write(pre_line)
+                    if pre_line.endswith(b'\r'):
+                        pre_line = pre_line[0:-1]
+                    out.write(pre_line)
+                    out.close()
+                    return True, "File '%s' upload success!" % os.path.basename(target_path)
+                else:
+                    out.write(pre_line)
+                    pre_line = line
+        finally:
+            if not out.closed:
                 out.close()
-                return True, "File '%s' upload success!" % fn
-            else:
-                out.write(pre_line)
-                pre_line = line
-        return False, "Unexpect Ends of data."
+        return False, "Unexpected end of data."
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -188,7 +218,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return None
         list_dir.sort(key=lambda a: a.lower())
         f = BytesIO()
-        display_path = escape(unquote(self.path))
+        display_path = html_escape(unquote(self.path))
         f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write(b"<html>\n<title>Directory listing for %s</title>\n" % display_path.encode('utf-8'))
         f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('utf-8'))
@@ -207,7 +237,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 display_name = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write(b'<li><a href="%s">%s</a>\n' % (quote(linkname).encode('utf-8'), escape(display_name).encode('utf-8')))
+            f.write(b'<li><a href="%s">%s</a>\n' % (quote(linkname).encode('utf-8'), html_escape(display_name).encode('utf-8')))
         f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
@@ -248,6 +278,27 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     })
 
 
+def html_escape(value):
+    """Escape user-controlled text for safe HTML output."""
+    return escape(value, quote=True)
+
+
+def sanitize_upload_filename(filename):
+    """Return a safe upload filename, or None when the name is unsafe."""
+    filename = filename.replace('\x00', '').strip()
+    normalized = filename.replace('\\', '/')
+    drive, filename_without_drive = os.path.splitdrive(filename)
+    if drive or filename_without_drive != filename:
+        return None
+    if re.match(r'^[A-Za-z]:', filename):
+        return None
+    if '/' in normalized:
+        return None
+    if filename in ('', os.curdir, os.pardir):
+        return None
+    return filename
+
+
 def translate_path(path):
     """Translate a /-separated PATH to the local filename syntax.
     Components that mean special things to the local file system
@@ -276,7 +327,7 @@ def signal_handler(signal, frame):
 
 def _argparse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', '-b', metavar='ADDRESS', default='0.0.0.0', help='Specify alternate bind address [default: all interfaces]')
+    parser.add_argument('--bind', '-b', metavar='ADDRESS', default='127.0.0.1', help='Specify alternate bind address [default: 127.0.0.1]')
     parser.add_argument('--version', '-v', action='version', version=__version__)
     parser.add_argument('port', action='store', default=8000, type=int, nargs='?', help='Specify alternate port [default: 8000]')
     return parser.parse_args()
@@ -287,7 +338,7 @@ def main():
     server_address = (args.bind, args.port)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    httpd = ThreadingHTTPServer(server_address, SimpleHTTPRequestHandler)
     server = httpd.socket.getsockname()
     print("server_version: " + SimpleHTTPRequestHandler.server_version + ", python_version: " + SimpleHTTPRequestHandler.sys_version)
     print("sys encoding: " + sys.getdefaultencoding())

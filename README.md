@@ -1,13 +1,12 @@
 # simple_http_server
 
-[![Build Status](https://travis-ci.org/freelamb/simple_http_server.svg?branch=master)](https://travis-ci.org/freelamb/simple_http_server)
-
 ## Features
 
 - ✔ simple
 - ✔ upload
 - ✔ download
 - ✔ support python2, python3
+- ✔ Multi-threaded
 ## Usage
 ```bash
 # get code
@@ -18,6 +17,9 @@ $ cd simple_http_server
 
 # run server
 $ python simple_http_server.py 8000
+
+# expose to another host in a trusted network
+$ python simple_http_server.py --bind 0.0.0.0 8000
 
 # run as docker container
 # 1.build the image('.' below refer to the root path of this project)
@@ -30,12 +32,17 @@ docker run
   -d freelamb/simple_http_server:latest
 ```
 
+## Security
+
+This server is intended for temporary file sharing in trusted environments. The default bind address is `127.0.0.1`; use `--bind 0.0.0.0` only when you explicitly want other hosts to connect.
+
+Uploaded file names are sanitized, upload results and directory listings escape user-controlled text, and uploads larger than 100 MiB are rejected.
+
 ## Example
 
 ![](image/example.jpeg)
 
 ## Todo
-- [ ] support Multi-threaded
 - [ ] add docker images
 - [ ] add to pypi
 ## Contributing
