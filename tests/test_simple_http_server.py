@@ -155,5 +155,26 @@ class ArgumentParserTests(unittest.TestCase):
         self.assertEqual(args.port, 8000)
 
 
+class ConnectionHandlingTests(unittest.TestCase):
+    def test_client_disconnect_does_not_escape_handler(self):
+        handler = simple_http_server.SimpleHTTPRequestHandler.__new__(
+            simple_http_server.SimpleHTTPRequestHandler
+        )
+        handler.close_connection = False
+
+        original_handle = simple_http_server.BaseHTTPRequestHandler.handle
+
+        def raise_disconnect(_self):
+            raise simple_http_server.CONNECTION_ERRORS[0]()
+
+        simple_http_server.BaseHTTPRequestHandler.handle = raise_disconnect
+        try:
+            handler.handle()
+        finally:
+            simple_http_server.BaseHTTPRequestHandler.handle = original_handle
+
+        self.assertTrue(handler.close_connection)
+
+
 if __name__ == "__main__":
     unittest.main()

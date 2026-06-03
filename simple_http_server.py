@@ -22,6 +22,7 @@ import shutil
 import mimetypes
 import re
 import signal
+import socket
 from io import BytesIO
 
 if sys.version_info.major == 3:
@@ -47,6 +48,11 @@ else:
 
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024
 
+try:
+    CONNECTION_ERRORS = (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)
+except NameError:
+    CONNECTION_ERRORS = (socket.error,)
+
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Simple HTTP request handler with GET/HEAD/POST commands.
@@ -60,6 +66,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     server_version = "simple_http_server/" + __version__
     max_upload_size = MAX_UPLOAD_SIZE
+
+    def handle(self):
+        try:
+            BaseHTTPRequestHandler.handle(self)
+        except CONNECTION_ERRORS:
+            self.close_connection = True
 
     def do_GET(self):
         """Serve a GET request."""
