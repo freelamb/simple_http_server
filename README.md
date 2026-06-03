@@ -1,5 +1,7 @@
 # simple_http_server
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 ## Features
 
 - ✔ simple
@@ -19,7 +21,7 @@ $ cd simple_http_server
 # run server
 $ python simple_http_server.py 8000
 
-# allow upload requests up to 1 GiB
+# optionally limit upload requests to 1 GiB
 $ python simple_http_server.py --max-upload-size 1024 8000
 
 # expose to another host in a trusted network
@@ -49,7 +51,7 @@ docker run
 
 This server is intended for temporary file sharing in trusted environments. The default bind address is `127.0.0.1`; use `--bind 0.0.0.0` only when you explicitly want other hosts to connect.
 
-Uploaded file names are sanitized, upload results and directory listings escape user-controlled text, and upload requests larger than 100 MiB are rejected by default. Use `--max-upload-size MIB` to raise that limit in trusted environments.
+Uploaded file names are sanitized, and upload results and directory listings escape user-controlled text. Upload size is unlimited by default; use `--max-upload-size MIB` to set a limit when you need one in trusted environments.
 
 ## Example
 

@@ -199,7 +199,7 @@ class ArgumentParserTests(unittest.TestCase):
             sys.argv = old_argv
         self.assertEqual(args.bind, "127.0.0.1")
         self.assertEqual(args.port, 8000)
-        self.assertEqual(args.max_upload_size, 100)
+        self.assertIsNone(args.max_upload_size)
 
     def test_custom_max_upload_size(self):
         old_argv = sys.argv
@@ -242,12 +242,21 @@ class ConnectionHandlingTests(unittest.TestCase):
 
 
 class UploadLimitTests(unittest.TestCase):
-    def test_large_upload_is_reported_as_too_large(self):
+    def test_upload_size_is_unlimited_by_default(self):
         handler = simple_http_server.SimpleHTTPRequestHandler.__new__(
             simple_http_server.SimpleHTTPRequestHandler
         )
-        handler.headers = {'content-length': str(simple_http_server.MAX_UPLOAD_SIZE + 1)}
-        handler.max_upload_size = simple_http_server.MAX_UPLOAD_SIZE
+        handler.headers = {'content-length': str(1024 * 1024 * 1024 * 10)}
+        handler.max_upload_size = None
+
+        self.assertFalse(handler.is_upload_too_large())
+
+    def test_configured_large_upload_is_reported_as_too_large(self):
+        handler = simple_http_server.SimpleHTTPRequestHandler.__new__(
+            simple_http_server.SimpleHTTPRequestHandler
+        )
+        handler.headers = {'content-length': str((100 * simple_http_server.BYTES_PER_MIB) + 1)}
+        handler.max_upload_size = 100 * simple_http_server.BYTES_PER_MIB
 
         self.assertTrue(handler.is_upload_too_large())
 

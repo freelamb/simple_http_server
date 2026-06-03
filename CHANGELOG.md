@@ -1,3 +1,10 @@
+<a name="0.3.6"></a>
+## [0.3.6] (2026-06-03)
+### Features
+
+* make upload size unlimited by default while keeping optional `--max-upload-size`
+* add a Simplified Chinese README and language links between README files
+
 <a name="0.3.5"></a>
 ## [0.3.5] (2026-06-03)
 ### Features

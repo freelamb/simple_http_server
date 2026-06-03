@@ -22,7 +22,7 @@ Treat this project as a temporary file-sharing tool for trusted environments. It
 - Adds an HTML upload form to directory listings.
 - Stores uploaded files in the requested directory after sanitizing the uploaded filename.
 - Avoids overwriting existing files by appending `_` to the target filename.
-- Rejects uploads larger than the configured upload limit; the default is 100 MiB and can be raised with `--max-upload-size MIB`.
+- Does not limit upload size by default; `--max-upload-size MIB` can set an explicit limit.
 - Uses Python standard library modules only.
 
 ## Important Implementation Notes
@@ -46,8 +46,8 @@ When making changes, prioritize these issues first:
 3. Preserve safer network defaults.
    The default bind address is `127.0.0.1`; document `0.0.0.0` as an explicit LAN/public option.
 
-4. Maintain upload limits.
-   Large or slow uploads can exhaust disk, memory, or worker capacity. The current limit is 100 MiB.
+4. Keep upload size behavior explicit.
+   Large or slow uploads can exhaust disk, memory, or worker capacity. The default is currently unlimited; document any limit changes clearly and keep `--max-upload-size` behavior covered by tests.
 
 5. Improve request robustness.
    Handle missing `Content-Type`, missing `content-length`, malformed multipart bodies, and interrupted uploads without crashing the server.
@@ -105,7 +105,8 @@ Keep these files aligned:
 
 - `simple_http_server.py`: source version in `__version__`.
 - `CHANGELOG.md`: released changes.
-- `README.md`: install, run, Docker, support status, and security caveats.
+- `README.md`: English install, run, Docker, support status, and security caveats.
+- `README.zh-CN.md`: Simplified Chinese translation of `README.md`; update it whenever the English README changes.
 - `SECURITY.md`: supported versions and vulnerability contact.
 - `.github/workflows/github-actions-test.yml`: supported Python versions and CI checks.
 
