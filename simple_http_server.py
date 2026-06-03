@@ -6,11 +6,12 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.5"
 __author__ = "yangyongbao@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
 import os
+import errno
 import sys
 import argparse
 import posixpath
@@ -104,10 +105,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def deal_post_data(self):
         content_type = self.headers.get("Content-Type", "")
-        match = re.search(r'boundary=([^;]+)', content_type)
-        if not match or "multipart/form-data" not in content_type.lower():
+        content_media_type, content_type_params = parse_header_params(content_type)
+        if content_media_type != "multipart/form-data":
             return False, "Content-Type must be multipart/form-data"
-        boundary = match.group(1).strip().strip('"').encode('utf-8')
+        boundary = content_type_params.get("boundary", "").encode('utf-8')
         if not boundary:
             return False, "Upload boundary is empty"
         content_length = self.headers.get('content-length')
@@ -117,53 +118,74 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             remain_bytes = int(content_length)
         except ValueError:
             return False, "Invalid content-length header"
+        if remain_bytes < 0:
+            return False, "Invalid content-length header"
         if remain_bytes > self.max_upload_size:
             return False, "Upload exceeds the %d byte limit" % self.max_upload_size
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        if boundary not in line:
+
+        def is_boundary_line(line):
+            stripped = line.rstrip(b'\r\n')
+            delimiter = b'--' + boundary
+            return stripped == delimiter or stripped == delimiter + b'--'
+
+        line, line_length = read_limited_line(self.rfile, remain_bytes)
+        remain_bytes -= line_length
+        if not line or not is_boundary_line(line):
             return False, "Content NOT begin with boundary"
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode('utf-8', 'replace'))
+
+        part_headers = []
+        while remain_bytes > 0:
+            line, line_length = read_limited_line(self.rfile, remain_bytes)
+            remain_bytes -= line_length
+            if not line:
+                return False, "Unexpected end of multipart headers"
+            if line in (b'\r\n', b'\n'):
+                break
+            part_headers.append(line.decode('utf-8', 'replace'))
+        else:
+            return False, "Unexpected end of multipart headers"
+
+        fn = get_upload_filename(part_headers)
         if not fn:
             return False, "Can't find out file name..."
-        fn = sanitize_upload_filename(fn[0])
+        fn = sanitize_upload_filename(fn)
         if not fn:
             return False, "Unsafe upload file name"
         path = translate_path(self.path)
-        target_path = os.path.join(path, fn)
-        while os.path.exists(target_path):
-            target_path += "_"
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
+        if not os.path.isdir(path):
+            return False, "Upload target is not a directory"
         try:
-            out = open(target_path, 'wb')
-        except IOError:
+            out, target_path = open_unique_upload_file(path, fn)
+        except (IOError, OSError):
             return False, "Can't create file to write, do you have permission to write?"
 
+        success = False
         try:
-            pre_line = self.rfile.readline()
-            remain_bytes -= len(pre_line)
+            pre_line = None
             while remain_bytes > 0:
-                line = self.rfile.readline()
-                remain_bytes -= len(line)
-                if boundary in line:
-                    pre_line = pre_line[0:-1]
-                    if pre_line.endswith(b'\r'):
+                line, line_length = read_limited_line(self.rfile, remain_bytes)
+                remain_bytes -= line_length
+                if not line:
+                    return False, "Unexpected end of data."
+                if is_boundary_line(line):
+                    if pre_line is not None:
                         pre_line = pre_line[0:-1]
-                    out.write(pre_line)
-                    out.close()
+                        if pre_line.endswith(b'\r'):
+                            pre_line = pre_line[0:-1]
+                        out.write(pre_line)
+                    success = True
                     return True, "File '%s' upload success!" % os.path.basename(target_path)
-                else:
+                if pre_line is not None:
                     out.write(pre_line)
-                    pre_line = line
+                pre_line = line
+            return False, "Unexpected end of data."
         finally:
-            if not out.closed:
-                out.close()
-        return False, "Unexpected end of data."
+            out.close()
+            if not success:
+                try:
+                    os.remove(target_path)
+                except OSError:
+                    pass
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -276,6 +298,75 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         '.c': 'text/plain',
         '.h': 'text/plain',
     })
+
+
+def read_limited_line(source, remaining_bytes):
+    """Read one line without consuming more than the declared body length."""
+    if remaining_bytes <= 0:
+        return b'', 0
+    line = source.readline(remaining_bytes)
+    return line, len(line)
+
+
+def parse_header_params(header_value):
+    """Parse a MIME-style header value into a lower-case value and params."""
+    parts = []
+    current = []
+    in_quote = False
+    escape_next = False
+    for char in header_value:
+        if escape_next:
+            current.append(char)
+            escape_next = False
+            continue
+        if in_quote and char == '\\':
+            current.append(char)
+            escape_next = True
+            continue
+        if char == '"':
+            in_quote = not in_quote
+            continue
+        if char == ';' and not in_quote:
+            parts.append("".join(current).strip())
+            current = []
+            continue
+        current.append(char)
+    parts.append("".join(current).strip())
+
+    if not parts or not parts[0]:
+        return "", {}
+    params = {}
+    for part in parts[1:]:
+        if '=' not in part:
+            continue
+        key, value = part.split('=', 1)
+        params[key.strip().lower()] = value.strip()
+    return parts[0].lower(), params
+
+
+def get_upload_filename(part_headers):
+    """Extract the upload filename from multipart part headers."""
+    for header in part_headers:
+        name, separator, value = header.partition(':')
+        if not separator or name.strip().lower() != 'content-disposition':
+            continue
+        disposition, params = parse_header_params(value.strip())
+        if disposition == 'form-data' and params.get('name') == 'file':
+            return params.get('filename')
+    return None
+
+
+def open_unique_upload_file(directory, filename):
+    """Open a unique upload target without racing another writer."""
+    target_path = os.path.join(directory, filename)
+    while True:
+        try:
+            fd = os.open(target_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            return os.fdopen(fd, 'wb'), target_path
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise
+            target_path += "_"
 
 
 def html_escape(value):
