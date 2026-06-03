@@ -22,7 +22,7 @@ Treat this project as a temporary file-sharing tool for trusted environments. It
 - Adds an HTML upload form to directory listings.
 - Stores uploaded files in the requested directory after sanitizing the uploaded filename.
 - Avoids overwriting existing files by appending `_` to the target filename.
-- Rejects uploads larger than 100 MiB.
+- Rejects uploads larger than the configured upload limit; the default is 100 MiB and can be raised with `--max-upload-size MIB`.
 - Uses Python standard library modules only.
 
 ## Important Implementation Notes
@@ -116,9 +116,27 @@ Known documentation drift to address in future work:
 - `CHANGELOG.md` does not reflect the current `0.3.2` source version.
 - README says Python 2 and Python 3 are supported, while CI and Docker only exercise Python 3.9.
 
+## Versioned Release Workflow
+
+Treat every code change as versioned work unless the user explicitly says it is documentation-only and should not be released. Before finishing a code change, keep the release metadata aligned and prepare the release follow-through:
+
+- Decide the next version number before committing. Do not reuse a version that has already been uploaded to PyPI.
+- Update the source version in `simple_http_server.py` (`__version__`).
+- Update the package version in `pyproject.toml`.
+- Add a new top entry in `CHANGELOG.md` with the version, date, and concise user-facing changes.
+- Update `README.md`, `SECURITY.md`, and any other user-facing docs when behavior, install steps, security posture, or supported versions change.
+- Run the required tests and packaging checks before release.
+- Commit the code and documentation changes together for that version.
+- Create and push a matching Git tag, preferably `vX.Y.Z`.
+- Create a GitHub Release for the tag with notes that match the changelog.
+- Build and upload the PyPI package for the same version.
+- Verify the package can be installed or at least that `twine check` passes before asking the user to publish.
+
+When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, changelog entry, tag, GitHub Release, and PyPI package.
+
 ## Release And Packaging Notes
 
-The project is not currently packaged for PyPI. If packaging is added, prefer a minimal modern setup and include:
+The project is packaged for PyPI with `pyproject.toml`. Keep the packaging metadata minimal and current:
 
 - A console script entrypoint.
 - README metadata.
