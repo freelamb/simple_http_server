@@ -1,5 +1,5 @@
 <a name="0.3.3"></a>
-## [0.3.3] (Unreleased)
+## [0.3.3] (2026-06-03)
 ### Security
 
 * sanitize uploaded filenames
