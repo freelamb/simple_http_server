@@ -1,3 +1,13 @@
+<a name="0.3.5"></a>
+## [0.3.5] (2026-06-03)
+### Features
+
+* add `--max-upload-size` to configure the upload request limit in MiB
+
+### Bug Fixes
+
+* return HTTP 413 for upload requests that exceed the configured limit
+
 <a name="0.3.4"></a>
 ## [0.3.4] (2026-06-03)
 ### Bug Fixes

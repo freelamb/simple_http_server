@@ -199,6 +199,25 @@ class ArgumentParserTests(unittest.TestCase):
             sys.argv = old_argv
         self.assertEqual(args.bind, "127.0.0.1")
         self.assertEqual(args.port, 8000)
+        self.assertEqual(args.max_upload_size, 100)
+
+    def test_custom_max_upload_size(self):
+        old_argv = sys.argv
+        sys.argv = ["simple_http_server.py", "--max-upload-size", "1024"]
+        try:
+            args = simple_http_server._argparse()
+        finally:
+            sys.argv = old_argv
+        self.assertEqual(args.max_upload_size, 1024)
+
+    def test_max_upload_size_must_be_positive(self):
+        old_argv = sys.argv
+        sys.argv = ["simple_http_server.py", "--max-upload-size", "0"]
+        try:
+            with self.assertRaises(SystemExit):
+                simple_http_server._argparse()
+        finally:
+            sys.argv = old_argv
 
 
 class ConnectionHandlingTests(unittest.TestCase):
@@ -220,6 +239,17 @@ class ConnectionHandlingTests(unittest.TestCase):
             simple_http_server.BaseHTTPRequestHandler.handle = original_handle
 
         self.assertTrue(handler.close_connection)
+
+
+class UploadLimitTests(unittest.TestCase):
+    def test_large_upload_is_reported_as_too_large(self):
+        handler = simple_http_server.SimpleHTTPRequestHandler.__new__(
+            simple_http_server.SimpleHTTPRequestHandler
+        )
+        handler.headers = {'content-length': str(simple_http_server.MAX_UPLOAD_SIZE + 1)}
+        handler.max_upload_size = simple_http_server.MAX_UPLOAD_SIZE
+
+        self.assertTrue(handler.is_upload_too_large())
 
 
 class PackagingMetadataTests(unittest.TestCase):

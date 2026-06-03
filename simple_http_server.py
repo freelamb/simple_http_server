@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 __author__ = "yangyongbao@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
@@ -46,7 +46,9 @@ else:
         daemon_threads = True
 
 
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024
+BYTES_PER_MIB = 1024 * 1024
+DEFAULT_MAX_UPLOAD_SIZE_MIB = 100
+MAX_UPLOAD_SIZE = DEFAULT_MAX_UPLOAD_SIZE_MIB * BYTES_PER_MIB
 
 try:
     CONNECTION_ERRORS = (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)
@@ -88,6 +90,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Serve a POST request."""
+        if self.is_upload_too_large():
+            self.close_connection = True
+            self.send_error(
+                413,
+                "Upload exceeds the %d MiB limit" % (self.max_upload_size // BYTES_PER_MIB),
+            )
+            return
         r, info = self.deal_post_data()
         print(r, info, "by: ", self.client_address)
         f = BytesIO()
@@ -113,6 +122,15 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if f:
             shutil.copyfileobj(f, self.wfile)
             f.close()
+
+    def is_upload_too_large(self):
+        content_length = self.headers.get('content-length')
+        if not content_length:
+            return False
+        try:
+            return int(content_length) > self.max_upload_size
+        except ValueError:
+            return False
 
     def deal_post_data(self):
         content_type = self.headers.get("Content-Type", "")
@@ -413,9 +431,19 @@ def signal_handler(signal, frame):
     print("You choose to stop me.")
     exit()
 
+def positive_int(value):
+    try:
+        result = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("%s is not an integer" % value)
+    if result <= 0:
+        raise argparse.ArgumentTypeError("%s is not a positive integer" % value)
+    return result
+
 def _argparse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--bind', '-b', metavar='ADDRESS', default='127.0.0.1', help='Specify alternate bind address [default: 127.0.0.1]')
+    parser.add_argument('--max-upload-size', metavar='MIB', default=DEFAULT_MAX_UPLOAD_SIZE_MIB, type=positive_int, help='Maximum upload request size in MiB [default: 100]')
     parser.add_argument('--version', '-v', action='version', version=__version__)
     parser.add_argument('port', action='store', default=8000, type=int, nargs='?', help='Specify alternate port [default: 8000]')
     return parser.parse_args()
@@ -424,6 +452,7 @@ def main():
     args = _argparse()
     # print(args)
     server_address = (args.bind, args.port)
+    SimpleHTTPRequestHandler.max_upload_size = args.max_upload_size * BYTES_PER_MIB
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     httpd = ThreadingHTTPServer(server_address, SimpleHTTPRequestHandler)
