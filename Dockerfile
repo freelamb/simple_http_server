@@ -10,4 +10,4 @@ ENV PORT=8000
 EXPOSE $PORT
 
 
-CMD python /opt/http_server/simple_http_server.py ${PORT}
+CMD python /opt/http_server/simple_http_server.py --bind 0.0.0.0 ${PORT}

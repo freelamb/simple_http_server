@@ -1,0 +1,138 @@
+# AGENTS.md
+
+This file gives future maintainers and coding agents the context needed to work on this repository safely.
+
+## Project Overview
+
+`simple_http_server` is a small Python HTTP file server with directory browsing, downloads, and browser-based file uploads. The project is intentionally lightweight and currently centers on one implementation file:
+
+- `simple_http_server.py`: request handler, upload handling, path translation, MIME detection, CLI parsing, and server startup.
+- `Dockerfile`: container entrypoint that serves `/opt/data`.
+- `.github/workflows/github-actions-test.yml`: lint-only CI across Linux, macOS, and Windows.
+- `README.md`: user-facing usage notes and project status.
+
+Treat this project as a temporary file-sharing tool for trusted environments. It should not be presented as a hardened public internet service unless authentication, upload limits, and stronger path/file validation are added.
+
+## Current Behavior
+
+- Runs with `python simple_http_server.py 8000`.
+- Accepts `--bind/-b ADDRESS`; the current default is `127.0.0.1`.
+- Serves files from the current working directory.
+- Lists directories when no `index.html` or `index.htm` exists.
+- Adds an HTML upload form to directory listings.
+- Stores uploaded files in the requested directory after sanitizing the uploaded filename.
+- Avoids overwriting existing files by appending `_` to the target filename.
+- Rejects uploads larger than 100 MiB.
+- Uses Python standard library modules only.
+
+## Important Implementation Notes
+
+- `SimpleHTTPRequestHandler` implements `GET`, `HEAD`, and `POST`.
+- `deal_post_data()` manually parses multipart upload bodies. Be careful when changing it; malformed input, missing headers, non-ASCII filenames, and large files need explicit coverage.
+- `translate_path()` maps URL paths to the current working directory and strips query/fragment components.
+- The server uses a threaded HTTP server so multiple requests can be handled concurrently.
+- The project still contains compatibility code for Python 2, but the Dockerfile and GitHub Actions use Python 3.9.
+
+## Safety And Security Priorities
+
+When making changes, prioritize these issues first:
+
+1. Sanitize uploaded filenames.
+   Use only a safe basename, reject absolute paths, reject `..`, and avoid allowing path separators inside uploaded names.
+
+2. Escape all user-controlled HTML output.
+   Directory names, file names, upload result messages, and paths should be HTML-escaped before rendering.
+
+3. Preserve safer network defaults.
+   The default bind address is `127.0.0.1`; document `0.0.0.0` as an explicit LAN/public option.
+
+4. Maintain upload limits.
+   Large or slow uploads can exhaust disk, memory, or worker capacity. The current limit is 100 MiB.
+
+5. Improve request robustness.
+   Handle missing `Content-Type`, missing `content-length`, malformed multipart bodies, and interrupted uploads without crashing the server.
+
+6. Consider concurrent serving.
+   If multi-client support is needed, use `ThreadingHTTPServer` on Python 3 and keep Python 2 compatibility decisions explicit.
+
+## Development Guidelines
+
+- Keep the project dependency-free unless there is a strong reason to add packaging or test dependencies.
+- Preserve the simple CLI experience.
+- Prefer small, focused changes over broad rewrites.
+- If Python 2 support is removed, update README, changelog, CI, and code comments in the same change.
+- If public/network-facing behavior changes, update README and SECURITY.md.
+- Do not silently change the served root directory behavior; users expect the current working directory to be served.
+- Avoid introducing platform-specific behavior without checking Linux, macOS, and Windows implications.
+
+## Testing Guidance
+
+There is no dedicated test suite yet. For any behavior change, add focused tests if possible. Useful coverage areas:
+
+- `translate_path()` rejects or neutralizes traversal attempts.
+- Directory listing escapes special characters.
+- Download responses include content type, length, and last-modified headers.
+- Upload accepts normal files.
+- Upload handles duplicate names predictably.
+- Upload rejects unsafe filenames.
+- Malformed upload requests return an error page instead of crashing.
+- CLI parsing supports default port, custom port, `--bind`, and `--version`.
+
+Before finishing a change, at minimum run:
+
+```bash
+python3 -m py_compile simple_http_server.py
+```
+
+If lint dependencies are available, also run:
+
+```bash
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+```
+
+For server behavior changes, manually start the server from a temporary directory and verify directory listing, download, upload, and duplicate filename handling.
+
+Run the unit tests with:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+## Documentation Maintenance
+
+Keep these files aligned:
+
+- `simple_http_server.py`: source version in `__version__`.
+- `CHANGELOG.md`: released changes.
+- `README.md`: install, run, Docker, support status, and security caveats.
+- `SECURITY.md`: supported versions and vulnerability contact.
+- `.github/workflows/github-actions-test.yml`: supported Python versions and CI checks.
+
+Known documentation drift to address in future work:
+
+- README still shows a Travis CI badge.
+- `.travis.yml` is obsolete and does not run meaningful tests.
+- `CHANGELOG.md` does not reflect the current `0.3.2` source version.
+- README says Python 2 and Python 3 are supported, while CI and Docker only exercise Python 3.9.
+
+## Release And Packaging Notes
+
+The project is not currently packaged for PyPI. If packaging is added, prefer a minimal modern setup and include:
+
+- A console script entrypoint.
+- README metadata.
+- License metadata.
+- Python version classifiers.
+- A clear decision on Python 2 support.
+
+Docker publishing is also not automated. If adding container releases, prefer GitHub Container Registry or Docker Hub with an explicit release workflow.
+
+## Good First Improvements
+
+- Add tests around path translation and upload filename safety.
+- Sanitize and escape upload result output.
+- Replace `HTTPServer` with a threaded server for Python 3.
+- Update GitHub Actions to current action versions.
+- Remove or replace Travis references.
+- Clarify safe usage in README.
