@@ -129,10 +129,10 @@ Treat every code change as versioned work unless the user explicitly says it is 
 - Create and push a matching Git tag, preferably `vX.Y.Z`.
 - Create a GitHub Release for the tag with concise user-facing release notes.
 - Build and upload the PyPI package for the same version.
-- Build and push Docker Hub images for the same version when Docker publishing is part of the release.
+- Build and push Docker Hub images for the same version whenever there is a version update.
 - Verify the package can be installed or at least that `twine check` passes before asking the user to publish.
 
-When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, tag, GitHub Release, PyPI package, and Docker image.
+When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, tag, GitHub Release, PyPI package, and Docker Hub image.
 
 ## Release And Packaging Notes
 
@@ -144,7 +144,7 @@ The project is packaged for PyPI with `pyproject.toml`. Keep the packaging metad
 - Python version classifiers.
 - A clear decision on Python 2 support.
 
-Docker Hub image name: `yybmec/simple_http_server`. When publishing Docker images, push both `yybmec/simple_http_server:X.Y.Z` and `yybmec/simple_http_server:latest`, and keep the README Docker examples aligned with the published image.
+Docker Hub image name: `yybmec/simple_http_server`. Every version update must push both `yybmec/simple_http_server:X.Y.Z` and `yybmec/simple_http_server:latest`, and keep the README Docker examples aligned with the published image.
 
 The Docker Hub publish workflow requires repository secrets named `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. If those secrets are unavailable, document the manual Docker publish command and ask the maintainer to run it from a machine with Docker installed and Docker Hub access.
 

@@ -72,13 +72,6 @@ $ docker run --rm -d \
 
 ![](image/example.jpeg)
 
-## 贡献
-
-1. 检查已有 issue，或新建 issue 来讨论功能想法或问题。
-2. 在 GitHub 上 fork [本仓库](https://github.com/freelamb/simple_http_server)，从 **master** 分支开始修改，或基于它创建新分支。
-3. 编写测试，证明问题已经修复，或功能符合预期。
-4. 提交 pull request，并持续跟进直到合并和发布。记得把自己添加到 [AUTHORS](AUTHORS.md)。
-
 ## 许可证
 
 [MIT](https://tldrlegal.com/license/mit-license)
