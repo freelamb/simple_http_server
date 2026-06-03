@@ -1,3 +1,11 @@
+<a name="0.3.4"></a>
+## [0.3.4] (2026-06-03)
+### Bug Fixes
+
+* preserve uploads that omit an optional part Content-Type header
+* avoid truncating uploads whose content contains boundary-like text
+* remove partial files when uploads end unexpectedly
+
 <a name="0.3.3"></a>
 ## [0.3.3] (2026-06-03)
 ### Security
