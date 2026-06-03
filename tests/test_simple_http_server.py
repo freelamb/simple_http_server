@@ -90,6 +90,18 @@ class UploadParsingTests(unittest.TestCase):
         terminator = b'--' + self.boundary + (b'--' if close else b'')
         return b'\r\n'.join(headers) + b'\r\n' + content + b'\r\n' + terminator + b'\r\n'
 
+    def make_batch_body(self, files):
+        body = []
+        for filename, content in files:
+            body.extend([
+                b'--' + self.boundary,
+                b'Content-Disposition: form-data; name="file"; filename="' + filename + b'"',
+                b'',
+                content,
+            ])
+        body.append(b'--' + self.boundary + b'--')
+        return b'\r\n'.join(body) + b'\r\n'
+
     def run_upload(self, body, content_length=None):
         old_cwd = os.getcwd()
         temp_dir = tempfile.mkdtemp()
@@ -140,6 +152,40 @@ class UploadParsingTests(unittest.TestCase):
 
         self.assertFalse(result[0])
         self.assertEqual(result[1], 'Unexpected end of data.')
+        self.assertEqual(files, {})
+
+    def test_upload_accepts_multiple_files(self):
+        body = self.make_batch_body([
+            (b'one.txt', b'one'),
+            (b'two.txt', b'two'),
+        ])
+
+        result, files = self.run_upload(body)
+
+        self.assertTrue(result[0], result[1])
+        self.assertEqual(result[1], '2 files upload success!')
+        self.assertEqual(files, {'one.txt': b'one', 'two.txt': b'two'})
+
+    def test_upload_keeps_duplicate_batch_names_unique(self):
+        body = self.make_batch_body([
+            (b'example.txt', b'first'),
+            (b'example.txt', b'second'),
+        ])
+
+        result, files = self.run_upload(body)
+
+        self.assertTrue(result[0], result[1])
+        self.assertEqual(files, {'example.txt': b'first', 'example.txt_': b'second'})
+
+    def test_upload_without_selected_files_fails(self):
+        body = self.make_batch_body([
+            (b'', b''),
+        ])
+
+        result, files = self.run_upload(body)
+
+        self.assertFalse(result[0])
+        self.assertEqual(result[1], 'No files uploaded')
         self.assertEqual(files, {})
 
 

@@ -134,77 +134,124 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if remain_bytes > self.max_upload_size:
             return False, "Upload exceeds the %d byte limit" % self.max_upload_size
 
+        remain_bytes_value = [remain_bytes]
+
         def read_upload_line():
             line = self.rfile.readline()
+            remain_bytes_value[0] -= len(line)
             return line, len(line)
 
-        def is_boundary_line(line):
+        def boundary_state(line):
             stripped = line.rstrip(b'\r\n')
             delimiter = b'--' + boundary
-            return stripped == delimiter or stripped == delimiter + b'--'
+            if stripped == delimiter:
+                return "next"
+            if stripped == delimiter + b'--':
+                return "close"
+            return None
 
-        line, line_length = read_upload_line()
-        remain_bytes -= line_length
-        if not line or not is_boundary_line(line):
-            return False, "Content NOT begin with boundary"
-
-        part_headers = []
-        while remain_bytes > 0:
-            line, line_length = read_upload_line()
-            remain_bytes -= line_length
-            if not line:
-                return False, "Unexpected end of multipart headers"
-            if line in (b'\r\n', b'\n'):
-                break
-            part_headers.append(line.decode('utf-8', 'replace'))
-        else:
-            return False, "Unexpected end of multipart headers"
-
-        header_text = "".join(part_headers)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="([^"]*)"', header_text)
-        if not fn:
-            return False, "Can't find out file name..."
-        fn = sanitize_upload_filename(fn[0])
-        if not fn:
-            return False, "Unsafe upload file name"
-        path = translate_path(self.path)
-        if not os.path.isdir(path):
-            return False, "Upload target is not a directory"
-        target_path = os.path.join(path, fn)
-        while os.path.exists(target_path):
-            target_path += "_"
-        try:
-            out = open(target_path, 'wb')
-        except IOError:
-            return False, "Can't create file to write, do you have permission to write?"
-
-        success = False
-        try:
-            pre_line = None
-            while remain_bytes > 0:
+        def read_part_headers():
+            headers = []
+            while True:
                 line, line_length = read_upload_line()
-                remain_bytes -= line_length
                 if not line:
-                    return False, "Unexpected end of data."
-                if is_boundary_line(line):
+                    return None, line_length, "Unexpected end of multipart headers"
+                if line in (b'\r\n', b'\n'):
+                    return headers, line_length, None
+                headers.append(line.decode('utf-8', 'replace'))
+
+        def unique_upload_path(directory, filename):
+            target = os.path.join(directory, filename)
+            while os.path.exists(target):
+                target += "_"
+            return target
+
+        def remove_files(paths):
+            for file_path in paths:
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+
+        def write_file_content(out):
+            pre_line = None
+            while True:
+                line, line_length = read_upload_line()
+                if not line:
+                    return None, line_length, "Unexpected end of data."
+                state = boundary_state(line)
+                if state:
                     if pre_line is not None:
                         pre_line = pre_line[0:-1]
                         if pre_line.endswith(b'\r'):
                             pre_line = pre_line[0:-1]
                         out.write(pre_line)
-                    success = True
-                    return True, "File '%s' upload success!" % os.path.basename(target_path)
+                    return state, line_length, None
                 if pre_line is not None:
                     out.write(pre_line)
                 pre_line = line
-            return False, "Unexpected end of data."
-        finally:
-            out.close()
+
+        line, _ = read_upload_line()
+        if not line or boundary_state(line) != "next":
+            return False, "Content NOT begin with boundary"
+
+        path = translate_path(self.path)
+        if not os.path.isdir(path):
+            return False, "Upload target is not a directory"
+
+        uploaded_files = []
+        while remain_bytes_value[0] > 0:
+            part_headers, _, error = read_part_headers()
+            if error:
+                remove_files(uploaded_files)
+                return False, error
+
+            header_text = "".join(part_headers)
+            fn = re.findall(r'Content-Disposition.*name="file"; filename="([^"]*)"', header_text)
+            if not fn:
+                remove_files(uploaded_files)
+                return False, "Can't find out file name..."
+            if fn[0] == "":
+                state, _, error = write_file_content(BytesIO())
+                if error:
+                    remove_files(uploaded_files)
+                    return False, error
+                if state == "close":
+                    break
+                continue
+            fn = sanitize_upload_filename(fn[0])
+            if not fn:
+                remove_files(uploaded_files)
+                return False, "Unsafe upload file name"
+
+            target_path = unique_upload_path(path, fn)
+            try:
+                out = open(target_path, 'wb')
+            except IOError:
+                remove_files(uploaded_files)
+                return False, "Can't create file to write, do you have permission to write?"
+
+            success = False
+            try:
+                state, _, error = write_file_content(out)
+                if error:
+                    return False, error
+                success = True
+            finally:
+                out.close()
+                if not success:
+                    remove_files(uploaded_files + [target_path])
             if not success:
-                try:
-                    os.remove(target_path)
-                except OSError:
-                    pass
+                return False, "Unexpected end of data."
+            uploaded_files.append(target_path)
+            if state == "close":
+                break
+
+        if not uploaded_files:
+            return False, "No files uploaded"
+        if len(uploaded_files) == 1:
+            return True, "File '%s' upload success!" % os.path.basename(uploaded_files[0])
+        return True, "%d files upload success!" % len(uploaded_files)
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -265,7 +312,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         f.write(b"<body>\n<h2>Directory listing for %s</h2>\n" % display_path.encode('utf-8'))
         f.write(b"<hr>\n")
         f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
-        f.write(b"<input name=\"file\" type=\"file\"/>")
+        f.write(b"<input name=\"file\" type=\"file\" multiple/>")
         f.write(b"<input type=\"submit\" value=\"upload\"/></form>\n")
         f.write(b"<hr>\n<ul>\n")
         for name in list_dir:

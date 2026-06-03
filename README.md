@@ -4,6 +4,7 @@
 
 - ✔ simple
 - ✔ upload
+- ✔ batch upload
 - ✔ download
 - ✔ support python2, python3
 - ✔ Multi-threaded
@@ -36,7 +37,7 @@ docker run
 
 This server is intended for temporary file sharing in trusted environments. The default bind address is `127.0.0.1`; use `--bind 0.0.0.0` only when you explicitly want other hosts to connect.
 
-Uploaded file names are sanitized, upload results and directory listings escape user-controlled text, and uploads larger than 100 MiB are rejected.
+Uploaded file names are sanitized, upload results and directory listings escape user-controlled text, and upload requests larger than 100 MiB are rejected.
 
 ## Example
 
