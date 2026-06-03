@@ -35,16 +35,29 @@ $ python -m pip install simple-http-server-upload
 $ simple-http-server-upload 8000
 ```
 
+Run with Docker:
+
 ```bash
-# run as docker container
-# 1.build the image('.' below refer to the root path of this project)
-docker build -t freelamb/simple_http_server .
-# 2.run the container using the image built just now in docker 
-docker run 
-  --name simple_http_server \ 
-  -p 8000:8000 \ 
-  -v /opt/data:/opt/data \ 
-  -d freelamb/simple_http_server:latest
+# pull the published image
+$ docker pull freelamb/simple_http_server:latest
+
+# serve the current directory on http://127.0.0.1:8000
+$ docker run --rm -d \
+  --name simple_http_server \
+  -p 8000:8000 \
+  -v "$PWD":/opt/data \
+  freelamb/simple_http_server:latest
+```
+
+Build the Docker image locally:
+
+```bash
+$ docker build -t freelamb/simple_http_server:local .
+$ docker run --rm -d \
+  --name simple_http_server \
+  -p 8000:8000 \
+  -v "$PWD":/opt/data \
+  freelamb/simple_http_server:local
 ```
 
 ## Security
@@ -57,8 +70,6 @@ Uploaded file names are sanitized, and upload results and directory listings esc
 
 ![](image/example.jpeg)
 
-## Todo
-- [ ] add docker images
 ## Contributing
 
 1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.

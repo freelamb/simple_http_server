@@ -129,9 +129,10 @@ Treat every code change as versioned work unless the user explicitly says it is 
 - Create and push a matching Git tag, preferably `vX.Y.Z`.
 - Create a GitHub Release for the tag with concise user-facing release notes.
 - Build and upload the PyPI package for the same version.
+- Build and push Docker Hub images for the same version when Docker publishing is part of the release.
 - Verify the package can be installed or at least that `twine check` passes before asking the user to publish.
 
-When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, tag, GitHub Release, and PyPI package.
+When multiple issues are fixed in one session, keep each issue as a separate focused commit. If separate releases are requested or appropriate, each release must have its own version, tag, GitHub Release, PyPI package, and Docker image.
 
 ## Release And Packaging Notes
 
@@ -143,7 +144,9 @@ The project is packaged for PyPI with `pyproject.toml`. Keep the packaging metad
 - Python version classifiers.
 - A clear decision on Python 2 support.
 
-Docker publishing is also not automated. If adding container releases, prefer GitHub Container Registry or Docker Hub with an explicit release workflow.
+Docker Hub image name: `freelamb/simple_http_server`. When publishing Docker images, push both `freelamb/simple_http_server:X.Y.Z` and `freelamb/simple_http_server:latest`, and keep the README Docker examples aligned with the published image.
+
+The Docker Hub publish workflow requires repository secrets named `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. If those secrets are unavailable, document the manual Docker publish command and ask the maintainer to run it from a machine with Docker installed and Docker Hub access.
 
 ## Good First Improvements
 

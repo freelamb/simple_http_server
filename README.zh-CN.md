@@ -37,17 +37,29 @@ $ python -m pip install simple-http-server-upload
 $ simple-http-server-upload 8000
 ```
 
-```bash
-# 作为 Docker 容器运行
-# 1. 构建镜像（下面的 "." 表示项目根目录）
-docker build -t freelamb/simple_http_server .
+使用 Docker 运行：
 
-# 2. 使用刚刚构建的镜像启动容器
-docker run
+```bash
+# 拉取已发布镜像
+$ docker pull freelamb/simple_http_server:latest
+
+# 将当前目录挂载到容器中，并通过 http://127.0.0.1:8000 访问
+$ docker run --rm -d \
   --name simple_http_server \
   -p 8000:8000 \
-  -v /opt/data:/opt/data \
-  -d freelamb/simple_http_server:latest
+  -v "$PWD":/opt/data \
+  freelamb/simple_http_server:latest
+```
+
+本地构建 Docker 镜像：
+
+```bash
+$ docker build -t freelamb/simple_http_server:local .
+$ docker run --rm -d \
+  --name simple_http_server \
+  -p 8000:8000 \
+  -v "$PWD":/opt/data \
+  freelamb/simple_http_server:local
 ```
 
 ## 安全说明
@@ -59,10 +71,6 @@ docker run
 ## 示例
 
 ![](image/example.jpeg)
-
-## 待办
-
-- [ ] 添加 Docker 镜像
 
 ## 贡献
 
