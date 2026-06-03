@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __author__ = "yangyongbao@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
