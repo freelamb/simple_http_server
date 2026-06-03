@@ -41,25 +41,25 @@ $ simple-http-server-upload 8000
 
 ```bash
 # 拉取已发布镜像
-$ docker pull freelamb/simple_http_server:latest
+$ docker pull yybmec/simple_http_server:latest
 
 # 将当前目录挂载到容器中，并通过 http://127.0.0.1:8000 访问
 $ docker run --rm -d \
   --name simple_http_server \
   -p 8000:8000 \
   -v "$PWD":/opt/data \
-  freelamb/simple_http_server:latest
+  yybmec/simple_http_server:latest
 ```
 
 本地构建 Docker 镜像：
 
 ```bash
-$ docker build -t freelamb/simple_http_server:local .
+$ docker build -t yybmec/simple_http_server:local .
 $ docker run --rm -d \
   --name simple_http_server \
   -p 8000:8000 \
   -v "$PWD":/opt/data \
-  freelamb/simple_http_server:local
+  yybmec/simple_http_server:local
 ```
 
 ## 安全说明

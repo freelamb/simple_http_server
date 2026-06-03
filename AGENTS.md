@@ -144,7 +144,7 @@ The project is packaged for PyPI with `pyproject.toml`. Keep the packaging metad
 - Python version classifiers.
 - A clear decision on Python 2 support.
 
-Docker Hub image name: `freelamb/simple_http_server`. When publishing Docker images, push both `freelamb/simple_http_server:X.Y.Z` and `freelamb/simple_http_server:latest`, and keep the README Docker examples aligned with the published image.
+Docker Hub image name: `yybmec/simple_http_server`. When publishing Docker images, push both `yybmec/simple_http_server:X.Y.Z` and `yybmec/simple_http_server:latest`, and keep the README Docker examples aligned with the published image.
 
 The Docker Hub publish workflow requires repository secrets named `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. If those secrets are unavailable, document the manual Docker publish command and ask the maintainer to run it from a machine with Docker installed and Docker Hub access.
 

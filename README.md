@@ -39,25 +39,25 @@ Run with Docker:
 
 ```bash
 # pull the published image
-$ docker pull freelamb/simple_http_server:latest
+$ docker pull yybmec/simple_http_server:latest
 
 # serve the current directory on http://127.0.0.1:8000
 $ docker run --rm -d \
   --name simple_http_server \
   -p 8000:8000 \
   -v "$PWD":/opt/data \
-  freelamb/simple_http_server:latest
+  yybmec/simple_http_server:latest
 ```
 
 Build the Docker image locally:
 
 ```bash
-$ docker build -t freelamb/simple_http_server:local .
+$ docker build -t yybmec/simple_http_server:local .
 $ docker run --rm -d \
   --name simple_http_server \
   -p 8000:8000 \
   -v "$PWD":/opt/data \
-  freelamb/simple_http_server:local
+  yybmec/simple_http_server:local
 ```
 
 ## Security
