@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 __author__ = "yangyongbao@126.com"
 __all__ = ["SimpleHTTPRequestHandler"]
 
@@ -117,53 +117,82 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             remain_bytes = int(content_length)
         except ValueError:
             return False, "Invalid content-length header"
+        if remain_bytes < 0:
+            return False, "Invalid content-length header"
         if remain_bytes > self.max_upload_size:
             return False, "Upload exceeds the %d byte limit" % self.max_upload_size
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        if boundary not in line:
+
+        def read_upload_line():
+            line = self.rfile.readline()
+            return line, len(line)
+
+        def is_boundary_line(line):
+            stripped = line.rstrip(b'\r\n')
+            delimiter = b'--' + boundary
+            return stripped == delimiter or stripped == delimiter + b'--'
+
+        line, line_length = read_upload_line()
+        remain_bytes -= line_length
+        if not line or not is_boundary_line(line):
             return False, "Content NOT begin with boundary"
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode('utf-8', 'replace'))
+
+        part_headers = []
+        while remain_bytes > 0:
+            line, line_length = read_upload_line()
+            remain_bytes -= line_length
+            if not line:
+                return False, "Unexpected end of multipart headers"
+            if line in (b'\r\n', b'\n'):
+                break
+            part_headers.append(line.decode('utf-8', 'replace'))
+        else:
+            return False, "Unexpected end of multipart headers"
+
+        header_text = "".join(part_headers)
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="([^"]*)"', header_text)
         if not fn:
             return False, "Can't find out file name..."
         fn = sanitize_upload_filename(fn[0])
         if not fn:
             return False, "Unsafe upload file name"
         path = translate_path(self.path)
+        if not os.path.isdir(path):
+            return False, "Upload target is not a directory"
         target_path = os.path.join(path, fn)
         while os.path.exists(target_path):
             target_path += "_"
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
-        line = self.rfile.readline()
-        remain_bytes -= len(line)
         try:
             out = open(target_path, 'wb')
         except IOError:
             return False, "Can't create file to write, do you have permission to write?"
 
+        success = False
         try:
-            pre_line = self.rfile.readline()
-            remain_bytes -= len(pre_line)
+            pre_line = None
             while remain_bytes > 0:
-                line = self.rfile.readline()
-                remain_bytes -= len(line)
-                if boundary in line:
-                    pre_line = pre_line[0:-1]
-                    if pre_line.endswith(b'\r'):
+                line, line_length = read_upload_line()
+                remain_bytes -= line_length
+                if not line:
+                    return False, "Unexpected end of data."
+                if is_boundary_line(line):
+                    if pre_line is not None:
                         pre_line = pre_line[0:-1]
-                    out.write(pre_line)
-                    out.close()
+                        if pre_line.endswith(b'\r'):
+                            pre_line = pre_line[0:-1]
+                        out.write(pre_line)
+                    success = True
                     return True, "File '%s' upload success!" % os.path.basename(target_path)
-                else:
+                if pre_line is not None:
                     out.write(pre_line)
-                    pre_line = line
+                pre_line = line
+            return False, "Unexpected end of data."
         finally:
-            if not out.closed:
-                out.close()
-        return False, "Unexpected end of data."
+            out.close()
+            if not success:
+                try:
+                    os.remove(target_path)
+                except OSError:
+                    pass
 
     def send_head(self):
         """Common code for GET and HEAD commands.
